@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bru check acc</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { font-family: system-ui, sans-serif; }
+        .break { word-break: break-all; }
+    </style>
+</head>
+<body class="bg-zinc-950 text-zinc-100 p-6 max-w-3xl mx-auto">
+    <h1 class="text-2xl font-bold mb-6">Bru check acc</h1>
+    
+    <div class="bg-zinc-900 rounded-2xl p-6 mb-6">
+        <p id="status" class="text-center text-sm text-pink-400">Đang tải user.txt...</p>
+    </div>
+
+    <div class="bg-zinc-900 rounded-2xl p-6">
+        <textarea id="links" rows="8" 
+                  class="w-full bg-zinc-800 border border-zinc-700 rounded-xl p-4 text-sm font-mono focus:border-pink-500 outline-none"
+                  placeholder="Dán link..."></textarea>
+        
+        <button onclick="checkLinks()" 
+                class="mt-4 w-full bg-white text-black py-4 rounded-xl font-semibold">
+            Kiểm tra links
+        </button>
+    </div>
+
+    <div id="result" class="hidden mt-8">
+        <div class="grid grid-cols-2 gap-6">
+            <!-- Khớp -->
+            <div class="bg-zinc-900 rounded-2xl p-5 border border-pink-500/30">
+                <div class="flex justify-between items-center mb-3">
+                    <p class="text-pink-400 font-medium">✅ KHỚP (<span id="mcount">0</span>)</p>
+                    <button onclick="copyMatches()" class="text-xs bg-zinc-800 hover:bg-zinc-700 px-3 py-1 rounded-lg">Copy</button>
+                </div>
+                <div id="matches" class="space-y-3 text-sm max-h-80 overflow-auto"></div>
+            </div>
+            
+            <!-- Không khớp -->
+            <div class="bg-zinc-900 rounded-2xl p-5 border border-pink-500/30">
+                <div class="flex justify-between items-center mb-3">
+                    <p class="text-pink-400 font-medium">❌ KHÔNG KHỚP (<span id="nmcount">0</span>)</p>
+                    <button onclick="copyNonMatches()" class="text-xs bg-zinc-800 hover:bg-zinc-700 px-3 py-1 rounded-lg">Copy</button>
+                </div>
+                <div id="nonmatches" class="space-y-3 text-sm max-h-80 overflow-auto"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let userSet = new Set();
+
+        async function loadFile() {
+            try {
+                const res = await fetch('./user.txt');
+                if (!res.ok) throw new Error();
+                const text = await res.text();
+                const lines = text.split(/\r?\n/).map(l => l.trim()).filter(l => l);
+                userSet = new Set(lines);
+                document.getElementById('status').innerHTML = `Đã tải <span class="font-semibold">${lines.length}</span> username từ user.txt`;
+            } catch(e) {
+                document.getElementById('status').innerHTML = `❌ Không tìm thấy user.txt`;
+            }
+        }
+
+        function checkLinks() {
+            if (userSet.size === 0) {
+                alert('Chưa tải được user.txt!');
+                return;
+            }
+            const text = document.getElementById('links').value.trim();
+            if (!text) return;
+
+            const lines = text.split(/\r?\n/).map(l => l.trim()).filter(l => l);
+            let matches = [], non = [];
+
+            lines.forEach(link => {
+                try {
+                    let u = link;
+                    if (!u.startsWith('http')) u = 'https://' + u;
+                    const url = new URL(u);
+                    if (!url.hostname.endsWith('x.com') && !url.hostname.endsWith('twitter.com')) {
+                        non.push(link);
+                        return;
+                    }
+                    const parts = url.pathname.split('/').filter(p => p);
+                    const username = parts[0];
+                    if (userSet.has(username)) {
+                        matches.push(link);
+                    } else {
+                        non.push(link);
+                    }
+                } catch {
+                    non.push(link);
+                }
+            });
+
+            showResult(matches, non);
+        }
+
+        function showResult(matches, non) {
+            document.getElementById('result').classList.remove('hidden');
+            document.getElementById('mcount').textContent = matches.length;
+            document.getElementById('nmcount').textContent = non.length;
+
+            const mdiv = document.getElementById('matches');
+            const ndiv = document.getElementById('nonmatches');
+            mdiv.innerHTML = '';
+            ndiv.innerHTML = '';
+
+            matches.forEach(l => {
+                const a = document.createElement('a');
+                a.href = l;
+                a.target = '_blank';
+                a.className = 'block text-pink-300 hover:text-white break';
+                a.textContent = l;
+                mdiv.appendChild(a);
+            });
+
+            non.forEach(l => {
+                const a = document.createElement('a');
+                a.href = l;
+                a.target = '_blank';
+                a.className = 'block text-pink-300 hover:text-white break';
+                a.textContent = l;
+                ndiv.appendChild(a);
+            });
+        }
+
+        function copyMatches() {
+            const links = Array.from(document.getElementById('matches').querySelectorAll('a')).map(a => a.href).join('\n');
+            if (links) navigator.clipboard.writeText(links);
+        }
+
+        function copyNonMatches() {
+            const links = Array.from(document.getElementById('nonmatches').querySelectorAll('a')).map(a => a.href).join('\n');
+            if (links) navigator.clipboard.writeText(links);
+        }
+
+        window.onload = loadFile;
+    </script>
+</body>
+</html>
