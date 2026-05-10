@@ -78,6 +78,17 @@
             let matches = [], non = [];
 
             lines.forEach(link => {
+                // Trường hợp @username
+                if (link.startsWith('@')) {
+                    const username = link.slice(1);
+                    if (username && userSet.has(username)) {
+                        matches.push(link);
+                    } else {
+                        non.push(link);
+                    }
+                    return;
+                }
+
                 try {
                     let u = link;
                     if (!u.startsWith('http')) u = 'https://' + u;
