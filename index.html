@@ -124,7 +124,12 @@
 
             matches.forEach(l => {
                 const a = document.createElement('a');
-                a.href = l;
+                // Nếu là @username, set href thật tới x.com, ngược lại giữ nguyên
+                if (l.startsWith('@')) {
+                    a.href = `https://x.com/${l.slice(1)}`;
+                } else {
+                    a.href = l;
+                }
                 a.target = '_blank';
                 a.className = 'block text-pink-300 hover:text-white break';
                 a.textContent = l;
@@ -133,7 +138,11 @@
 
             non.forEach(l => {
                 const a = document.createElement('a');
-                a.href = l;
+                if (l.startsWith('@')) {
+                    a.href = `https://x.com/${l.slice(1)}`;
+                } else {
+                    a.href = l;
+                }
                 a.target = '_blank';
                 a.className = 'block text-pink-300 hover:text-white break';
                 a.textContent = l;
@@ -142,12 +151,18 @@
         }
 
         function copyMatches() {
-            const links = Array.from(document.getElementById('matches').querySelectorAll('a')).map(a => a.href).join('\n');
+            // Sửa: dùng textContent thay vì href để copy đúng nội dung người dùng nhập
+            const links = Array.from(document.getElementById('matches').querySelectorAll('a'))
+                              .map(a => a.textContent)
+                              .join('\n');
             if (links) navigator.clipboard.writeText(links);
         }
 
         function copyNonMatches() {
-            const links = Array.from(document.getElementById('nonmatches').querySelectorAll('a')).map(a => a.href).join('\n');
+            // Tương tự: copy text hiển thị
+            const links = Array.from(document.getElementById('nonmatches').querySelectorAll('a'))
+                              .map(a => a.textContent)
+                              .join('\n');
             if (links) navigator.clipboard.writeText(links);
         }
 
